@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Sensor Data Plot</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+  </head>
+  <body>
+    <div id="chart"></div>
+
+    <script>
+      const socket = new WebSocket("ws://localhost:3000");
+
+      socket.onmessage = function (event) {
+        const sensorData = JSON.parse(event.data);
+        console.log(sensorData);
+        plotChart(sensorData);
+      };
+
+      function plotChart(data) {
+        const dates = data.date;
+        const temperatures = data.temperature;
+
+        const margin = { top: 20, right: 20, bottom: 30, left: 50 };
+        const width = 600 - margin.left - margin.right;
+        const height = 400 - margin.top - margin.bottom;
+
+        const svg = d3
+          .select("#chart")
+          .append("svg")
+          .attr("width", width + margin.left + margin.right)
+          .attr("height", height + margin.top + margin.bottom)
+          .append("g")
+          .attr(
+            "transform",
+            "translate(" + margin.left + "," + margin.top + ")"
+          );
+
+        const xScale = d3
+          .scaleBand()
+          .domain(dates)
+          .range([0, width])
+          .padding(0.1);
+
+        const yScale = d3
+          .scaleLinear()
+          .domain([0, d3.max(temperatures)])
+          .range([height, 0]);
+
+        svg
+          .selectAll(".bar")
+          .data(temperatures)
+          .enter()
+          .append("rect")
+          .attr("class", "bar")
+          .attr("x", (d, i) => xScale(dates[i]))
+          .attr("width", xScale.bandwidth())
+          .attr("y", (d) => yScale(d))
+          .attr("height", (d) => height - yScale(d));
+
+        svg
+          .append("g")
+          .attr("transform", "translate(0," + height + ")")
+          .call(d3.axisBottom(xScale));
+
+        svg.append("g").call(d3.axisLeft(yScale));
+      }
+    </script>
+  </body>
+</html>
